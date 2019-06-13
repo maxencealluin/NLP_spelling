@@ -1,6 +1,6 @@
 import sys
 import re
-import unidecode
+import unicodedata
 
 def replace_mult(word, target, replacement):
 	for char in target:
@@ -17,8 +17,9 @@ def preprocess(word):
 	word = str.upper(word)
 	word = replace_mult(word, ' -\\', '')
 	word = replace_mult(word, "0123456789\n", "")
-	word = unidecode.unidecode(word)
-	return word
+	# print(word)
+	word = unicodedata.normalize('NFKD', word).encode('ASCII', 'ignore')
+	return word.decode('ascii')
 
 #Transforms words into a phonetic code
 def soundex(word):
@@ -119,23 +120,12 @@ def levenshtein(word1, word2):
 			matrix[j][i] = min(matrix[j - 1][i] + 1,
 								matrix[j][i - 1] + 1,
 								matrix[j - 1][i - 1] + cost)
-	dist = 0
+#damerau for characters swap
+			if i >= 2 and j >= 2 and word1[i - 1] == word2[j - 2] and word1[i - 2] == word2[j - 1]:
+				matrix[j][i] = min(matrix[j][i], matrix[j - 2][i - 2] + cost)
 	return int(matrix[m][n] * 10)
 
-# levenshtein(sys.argv[1], sys.argv[2])
-# print(levenshtein(r"déçu", "decu"))
-# print(levenshtein("decu", "docu"))
-# print(soundex("mange"))
-# print(soundex("manje"))
-#
-# print(soundex("pomme"))
-# print(soundex("popmme"))
-
-if __name__ == '__main__':
-	if len(sys.argv) <= 1:
-		print("Veuillez passer une phrase en argument.")
-		exit()
-
+def	correct_words(list_words, verbose = 0):
 	#Building soudex dictionary
 	dictionary = {}
 	with open("dict-u8.txt", 'r') as file:
@@ -146,9 +136,8 @@ if __name__ == '__main__':
 				dictionary[soundex(row)] = [row[:-1]]
 
 	#Splitting sentence and matching with corresponding soundex in dictionary
-	sentence = replace_mult(sys.argv[1], ",.;:/\'", ' ')
 	results = []
-	for word in str.split(sentence):
+	for word in list_words:
 		code = soundex(word)
 		try:
 			if word not in dictionary[code]:
@@ -173,7 +162,8 @@ if __name__ == '__main__':
 	#If multiple results for one word, matches the one with higher frequency
 	for j, words in enumerate(results):
 		if isinstance(words, list):
-			print(words)
+			if verbose == 1:
+				print(words)
 			max_freq = 0
 			idx = 0
 			for i, word in enumerate(words):
@@ -186,5 +176,15 @@ if __name__ == '__main__':
 								idx = i
 							break
 			results[j] = words[idx]
+	return results
 
+if __name__ == '__main__':
+	if len(sys.argv) <= 1:
+		print("Veuillez passer une phrase en argument.")
+		exit()
+	sentence = replace_mult(sys.argv[1], ",.;:/\'", ' ')
+	if len(sys.argv) >= 3 and sys.argv[2] == '-v':
+		results = correct_words(str.split(sentence), 1)
+	else:
+		results = correct_words(str.split(sentence))
 	print(results)
