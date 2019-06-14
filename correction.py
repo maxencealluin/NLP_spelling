@@ -17,7 +17,6 @@ def preprocess(word):
 	word = str.upper(word)
 	word = replace_mult(word, ' -\\', '')
 	word = replace_mult(word, "0123456789\n", "")
-	# print(word)
 	word = unicodedata.normalize('NFKD', word).encode('ASCII', 'ignore')
 	return word.decode('ascii')
 
@@ -37,7 +36,7 @@ def soundex(word):
 	code = replace_mult(code, "FV", "9")
 	code =  first + code
 	code = re.sub(r'(\d)\1+', r'\1', code)
-	return code
+	return code[:4]
 
 
 #Soundex2, not used by default because results seem less consistent than soundex 1
@@ -125,8 +124,8 @@ def levenshtein(word1, word2):
 				matrix[j][i] = min(matrix[j][i], matrix[j - 2][i - 2] + cost)
 	return int(matrix[m][n] * 10)
 
+#Building soundex dictionary
 def	correct_words(list_words, verbose = 0):
-	#Building soudex dictionary
 	dictionary = {}
 	with open("dict-u8.txt", 'r') as file:
 		for row in file:
